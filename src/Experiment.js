@@ -1,5 +1,10 @@
 import React, { Component } from 'react';
 import ControlForm from './ControlForm';
+import { VictoryChart, VictoryLine, VictoryTheme } from 'victory';
+
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
 
 import Agonist from './Agonist';
 
@@ -38,10 +43,12 @@ class Experiment extends Component {
     associationRateMultiplier = 0; //determines shape of rise to peak
 
     postWashPlateau = 0; //graph return to this after wash?
+
+    responseData = [];
     
     constructor(props) {
         super(props);
-        this.state = {value: ''};
+        this.state = {responseData: []};
 
         //populate our agonists
         this.agonists.push(new Agonist('acetylcholine',0.00000001,1.2,1,0.000001,100,1,0.1));
@@ -74,33 +81,83 @@ class Experiment extends Component {
             let timeElapsed = -10;
             let response = 0;
             let valueJustBeforeWash;
-            while (timeElapsed < this.timeTotal){
+            let tempResponseData = [];
+            //let timer;
+            
+            const intervalTimer = setInterval(()=>{
                 const ongoingErrorFactor = 1 + (gaussianRand()-0.5)*this.randomisation;
                 if(timeElapsed <= 0) {
                     response = ongoingErrorFactor - 1 //random aound 0;
                 } else if (timeElapsed > 0 && timeElapsed <= riseTime && timeElapsed <= this.timeWashStart) {
                     response = ongoingErrorFactor * peakResponse * (1-Math.exp(riseConstant*timeElapsed));
                 } else if (timeElapsed <= this.timeWashStart) {
-                    response = plateau + decay * Math.exp(decayConstant*(timeElapsed-riseTime))
+                    response = ongoingErrorFactor * plateau + decay * Math.exp(decayConstant*(timeElapsed-riseTime))
                     if(timeElapsed === this.timeWashStart) {
                         valueJustBeforeWash = response; //remember for decay below
                     }
                 } else {
                     response = (ongoingErrorFactor - 1) + this.postWashPlateau/100 * valueJustBeforeWash + (1 - this.postWashPlateau/100) * valueJustBeforeWash * Math.exp(washConstant * (timeElapsed-this.timeWashStart+1));
                 }
-                console.log(response);
+                tempResponseData.push({x:timeElapsed, y:response});
+                this.setState({responseData: tempResponseData});
                 timeElapsed += this.timeStep;
-            }
-        }
+                if (timeElapsed > this.timeTotal) clearInterval(intervalTimer);
+            }, 1);
+            
+            /*while (timeElapsed < this.timeTotal){
+                const ongoingErrorFactor = 1 + (gaussianRand()-0.5)*this.randomisation;
+                if(timeElapsed <= 0) {
+                    response = ongoingErrorFactor - 1 //random aound 0;
+                } else if (timeElapsed > 0 && timeElapsed <= riseTime && timeElapsed <= this.timeWashStart) {
+                    response = ongoingErrorFactor * peakResponse * (1-Math.exp(riseConstant*timeElapsed));
+                } else if (timeElapsed <= this.timeWashStart) {
+                    response = ongoingErrorFactor * plateau + decay * Math.exp(decayConstant*(timeElapsed-riseTime))
+                    if(timeElapsed === this.timeWashStart) {
+                        valueJustBeforeWash = response; //remember for decay below
+                    }
+                } else {
+                    response = (ongoingErrorFactor - 1) + this.postWashPlateau/100 * valueJustBeforeWash + (1 - this.postWashPlateau/100) * valueJustBeforeWash * Math.exp(washConstant * (timeElapsed-this.timeWashStart+1));
+                }
+                tempResponseData.push({x:timeElapsed, y:response});
+                //timer = setTimeout(() => {
+                //    this.setState({responseData: tempResponseData});
+                //  }, 1000);
+               timeElapsed += this.timeStep;
+            }*/
+         
+         }
         //alert(agonistName);
     }
 
     render() {
         return (
-            <ControlForm 
-                agonists = {this.agonists}
-                onSubmit = {(agonistName, agonistConc) => this.handleSubmit(agonistName, agonistConc)}
-            />
+            <Container>
+                <Row>
+                    <Col>
+                        <ControlForm 
+                            agonists = {this.agonists}
+                            onSubmit = {(agonistName, agonistConc) => this.handleSubmit(agonistName, agonistConc)}
+                        />
+                    </Col>
+                    <Col>
+                        <VictoryChart
+                            theme={VictoryTheme.material}
+                        >
+                            <VictoryLine
+                                style={{
+                                    data: { stroke: "#c43a31" },
+                                    parent: { border: "1px solid #ccc"}
+                                }}
+                                data={this.state.responseData}
+                                //animate={{
+                                //    duration: 2000,
+                                //    onLoad: { duration: 1000 }
+                                //}}
+                            />
+                        </VictoryChart>
+                    </Col>
+                </Row>
+            </Container>
         );
     }
 }
