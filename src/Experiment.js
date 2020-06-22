@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import ControlForm from './ControlForm';
-import { VictoryChart, VictoryLine, VictoryTheme } from 'victory';
+import { VictoryChart, VictoryLine, VictoryTheme, VictoryAxis } from 'victory';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -48,7 +48,10 @@ class Experiment extends Component {
     
     constructor(props) {
         super(props);
-        this.state = {responseData: []};
+        this.state = {
+            responseData: [],
+            peakResponse: 1,
+        };
 
         //populate our agonists
         this.agonists.push(new Agonist('acetylcholine',0.00000001,1.2,1,0.000001,100,1,0.1));
@@ -58,10 +61,15 @@ class Experiment extends Component {
         let agonist = searchArrayOfObjects(agonistName, this.agonists);
 
         if(agonist && agonistConc) {
+
+            this.setState({responseData: []});
+            this.setState({peakResponse: 1});
+
             const peakErrorFactor = 1 + (gaussianRand()-0.5)*this.randomisation; //randomisation sampled from roughly normal distribution around mean of 0.5 so take away 0.5 to give a mean of roughly 0
             const peakResponse = peakErrorFactor * (agonist.eMax * agonistConc)/(agonistConc + agonist.eC50)  //Hill Langmuir equation
+            this.setState({peakResponse: peakResponse});
 
-            let riseTime;
+            let riseTime = 0;
             if(this.associationRateMultiplier === 0) {
                 riseTime = this.timeToPeak;
             } else {
@@ -78,7 +86,7 @@ class Experiment extends Component {
             const decayConstant = agonist.decayRateMultiplier * Math.log(0.0001)/this.timeDecay;
             const washConstant = Math.log(0.01)/this.timeWash;
 
-            let timeElapsed = -10;
+            let timeElapsed = -20;
             let response = 0;
             let valueJustBeforeWash;
             let tempResponseData = [];
@@ -142,7 +150,12 @@ class Experiment extends Component {
                     <Col>
                         <VictoryChart
                             theme={VictoryTheme.material}
+                            domain={{ x: [-20, 180], y: [-this.state.peakResponse/10, this.state.peakResponse*1.2] }}
                         >
+                            <VictoryAxis tickValues={[-20, 0, 20, 40, 60, 80, 100, 120, 140, 160, 180]}>
+                            </VictoryAxis>
+                            <VictoryAxis dependentAxis>
+                            </VictoryAxis>
                             <VictoryLine
                                 style={{
                                     data: { stroke: "#c43a31" },

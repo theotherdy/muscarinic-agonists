@@ -1,6 +1,9 @@
 
 import React, { Component } from 'react';
 
+import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
+
 class ControlForm extends Component {
   constructor(props) {
     super(props);
@@ -30,8 +33,22 @@ class ControlForm extends Component {
 
   render() {
     return (
-      <form onSubmit={this.handleSubmit}>
-        <label>
+      <Form onSubmit={this.handleSubmit}>
+        <Form.Group controlId="formAgonistName">
+          <Form.Label>Agonist</Form.Label>
+          <Form.Control as="select" name="agonistName" value={this.state.agonistName} onChange={this.handleInputChange}>
+            <option value=''>Choose an agonist</option>
+            {this.props.agonists.map(({ name }, index) => <option key={name} value={name} >{name}</option>)}
+          </Form.Control>
+        </Form.Group>
+        <Form.Group controlId="formAgonistConc">
+          <Form.Label>Concentration (M)</Form.Label>
+          <Form.Control type="number" placeholder="Password" name="agonistConc" value={this.state.agonistConc} onChange={this.handleInputChange}/>
+        </Form.Group>
+        <Button disabled={this.state.agonistName.length === 0} variant="primary" type="submit">
+          Run
+        </Button>
+        {/*<label>
           Agonist:
           <select name="agonistName" value={this.state.agonistName} onChange={this.handleInputChange}>
             <option value=''>Choose an agonist</option>
@@ -42,8 +59,8 @@ class ControlForm extends Component {
           Concentration (M):
           <input type="number" name="agonistConc" value={this.state.agonistConc} onChange={this.handleInputChange} />
         </label>
-        <input disabled={this.state.agonistName.length === 0} type="submit" value="Submit" />
-      </form>
+        <input disabled={this.state.agonistName.length === 0} type="submit" value="Submit" />*/}
+      </Form>
     );
   }
 }
