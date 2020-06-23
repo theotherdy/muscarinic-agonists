@@ -55,6 +55,9 @@ class Experiment extends Component {
 
         //populate our agonists
         this.agonists.push(new Agonist('acetylcholine',0.00000001,1.2,1,0.000001,100,1,0.1));
+        this.agonists.push(new Agonist('methacholine',0.0000001,1.15,1,0.00001,100,1,0.1));
+        this.agonists.push(new Agonist('carbamylcholine',0.0000002,1.1,1,0.00002,100,1,0.1));
+        this.agonists.push(new Agonist('HTMA',0.00015,0.6,1,0.015,100,1,0.1));
     }
 
     handleSubmit(agonistName, agonistConc){
@@ -66,8 +69,18 @@ class Experiment extends Component {
             this.setState({peakResponse: 1});
 
             const peakErrorFactor = 1 + (gaussianRand()-0.5)*this.randomisation; //randomisation sampled from roughly normal distribution around mean of 0.5 so take away 0.5 to give a mean of roughly 0
-            const peakResponse = peakErrorFactor * (agonist.eMax * agonistConc)/(agonistConc + agonist.eC50)  //Hill Langmuir equation
+            const peakResponse = peakErrorFactor * (agonist.eMax * parseFloat(agonistConc))/(parseFloat(agonistConc) + agonist.eC50)  //Hill Langmuir equation
             this.setState({peakResponse: peakResponse});
+            /*console.log(agonistConc);
+            console.log(agonist.eMax);
+            console.log(agonist.eC50);
+            console.log(agonist.eMax * agonistConc);
+            console.log(agonistConc + agonist.eC50);
+            console.log((agonist.eMax * agonistConc)/(agonistConc + agonist.eC50));
+            console.log(peakErrorFactor * (agonist.eMax * agonistConc)/(agonistConc + agonist.eC50));
+            //console.log(peakErrorFactor);
+            console.log(peakErrorFactor);
+            console.log(peakResponse);*/
 
             let riseTime = 0;
             if(this.associationRateMultiplier === 0) {
@@ -95,16 +108,16 @@ class Experiment extends Component {
             const intervalTimer = setInterval(()=>{
                 const ongoingErrorFactor = 1 + (gaussianRand()-0.5)*this.randomisation;
                 if(timeElapsed <= 0) {
-                    response = ongoingErrorFactor - 1 //random aound 0;
+                    response = (ongoingErrorFactor - 1) * peakResponse; //random aound 0;
                 } else if (timeElapsed > 0 && timeElapsed <= riseTime && timeElapsed <= this.timeWashStart) {
                     response = ongoingErrorFactor * peakResponse * (1-Math.exp(riseConstant*timeElapsed));
                 } else if (timeElapsed <= this.timeWashStart) {
-                    response = ongoingErrorFactor * plateau + decay * Math.exp(decayConstant*(timeElapsed-riseTime))
+                    response = ongoingErrorFactor * (plateau + decay * Math.exp(decayConstant*(timeElapsed-riseTime)))
                     if(timeElapsed === this.timeWashStart) {
                         valueJustBeforeWash = response; //remember for decay below
                     }
                 } else {
-                    response = (ongoingErrorFactor - 1) + this.postWashPlateau/100 * valueJustBeforeWash + (1 - this.postWashPlateau/100) * valueJustBeforeWash * Math.exp(washConstant * (timeElapsed-this.timeWashStart+1));
+                    response = ((ongoingErrorFactor - 1) * peakResponse) + this.postWashPlateau/100 * valueJustBeforeWash + (1 - this.postWashPlateau/100) * valueJustBeforeWash * Math.exp(washConstant * (timeElapsed-this.timeWashStart+1));
                 }
                 tempResponseData.push({x:timeElapsed, y:response});
                 this.setState({responseData: tempResponseData});
@@ -151,15 +164,28 @@ class Experiment extends Component {
                         <VictoryChart
                             theme={VictoryTheme.material}
                             domain={{ x: [-20, 180], y: [-this.state.peakResponse/10, this.state.peakResponse*1.2] }}
+                            padding={{ left: 100, top: 20, right: 20, bottom: 100 }}
                         >
-                            <VictoryAxis tickValues={[-20, 0, 20, 40, 60, 80, 100, 120, 140, 160, 180]}>
-                            </VictoryAxis>
-                            <VictoryAxis dependentAxis>
-                            </VictoryAxis>
+                            <VictoryAxis 
+                                tickValues={[-20, 20, 40, 60, 80, 100, 120, 140, 160, 180]}
+                                label="Time (s)"
+                                style={{
+                                    axisLabel: { padding: 24 },
+                                    tickLabels: { padding: 2 }
+                                }}
+                            />
+                            <VictoryAxis 
+                                dependentAxis
+                                label="Response (g)"
+                                style={{
+                                    axisLabel: { padding: 52 },
+                                    tickLabels: { padding: 2 }
+                                }}
+                            />
                             <VictoryLine
                                 style={{
                                     data: { stroke: "#c43a31" },
-                                    parent: { border: "1px solid #ccc"}
+                                    parent: { border: "0.5px solid #ccc"}
                                 }}
                                 data={this.state.responseData}
                                 //animate={{
@@ -168,6 +194,11 @@ class Experiment extends Component {
                                 //}}
                             />
                         </VictoryChart>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+                        Adpated from the work of <a href="https://personalpages.manchester.ac.uk/staff/richard.prince/#Simulations_Section">Dr Richard Prince, University of Manchester</a>. All material is offered on a <a href="https://creativecommons.org/licenses/by-nc/2.0/uk/">Creative Commons Attribution-NonCommercial Licence</a>
                     </Col>
                 </Row>
             </Container>

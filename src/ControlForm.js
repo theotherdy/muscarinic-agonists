@@ -43,7 +43,7 @@ class ControlForm extends Component {
         </Form.Group>
         <Form.Group controlId="formAgonistConc">
           <Form.Label>Concentration (M)</Form.Label>
-          <Form.Control type="number" placeholder="Password" name="agonistConc" value={this.state.agonistConc} onChange={this.handleInputChange}/>
+          <Form.Control type="number" placeholder="e.g 0.00005 or 5e-4" name="agonistConc" value={this.state.agonistConc} onChange={this.handleInputChange}/>
         </Form.Group>
         <Button disabled={this.state.agonistName.length === 0} variant="primary" type="submit">
           Run
